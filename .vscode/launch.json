@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32F407_Debug",
+            "cwd": "${workspaceFolder}",
+            "executable": "./build/firmware.elf", // 指向生成的带调试符号的 elf 文件
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32F407VG",
+            "configFiles": [
+                "interface/stlink.cfg", // 硬件：ST-Link
+                "target/stm32f4x.cfg"   // 芯片：STM32F4 系列
+            ],
+            "runToEntryPoint": "main", // 极关键：按 F5 后程序自动停在 main 函数第一行等你
+            "showDevDebugOutput": "none"
+        }
+    ]
+}
