@@ -13,7 +13,7 @@
                 "interface/stlink.cfg", // 硬件：ST-Link
                 "target/stm32f4x.cfg"   // 芯片：STM32F4 系列
             ],
-            "runToEntryPoint": "main", // 极关键：按 F5 后程序自动停在 main 函数第一行等你
+            "runToEntryPoint": "main", // 按 F5 后程序自动停在 main 函数第一行等你
             "showDevDebugOutput": "none"
         }
     ]

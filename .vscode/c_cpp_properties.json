@@ -1,23 +1,29 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "STM32F4",
             "includePath": [
-                "${workspaceFolder}/User",
-                "${workspaceFolder}/User/bsp",
-                "${workspaceFolder}/User/app",
-                "${workspaceFolder}/Libraries/CMSIS/Include",
-                "${workspaceFolder}/Libraries/CMSIS/Device/ST/STM32F4xx/Include",
-                "${workspaceFolder}/Libraries/STM32F4xx_StdPeriph_Driver/inc"
+                "${workspaceFolder}/App",
+                "${workspaceFolder}/App/Main",
+
+                "${workspaceFolder}/BSP",
+                "${workspaceFolder}/BSP/Delay",
+                "${workspaceFolder}/BSP/LCD",
+                "${workspaceFolder}/BSP/USART",
+
+                "${workspaceFolder}/Platform/STM32F4",
+                "${workspaceFolder}/Platform/STM32F4/CMSIS/Include",
+                "${workspaceFolder}/Platform/STM32F4/CMSIS/Device/Include",
+                "${workspaceFolder}/Platform/STM32F4/StdPeriph/inc"
             ],
             "defines": [
-                "STM32F40_41xxx",
-                "USE_STDPERIPH_DRIVER"
+                "USE_STDPERIPH_DRIVER",
+                "STM32F40_41xxx"
             ],
-            "compilerPath": "C:/Program Files (x86)/Arm/GNU Toolchain mingw-w64-i686-arm-none-eabi/bin/arm-none-eabi-gcc.exe",
+            "compilerPath": "arm-none-eabi-gcc",
             "cStandard": "c11",
-            "cppStandard": "c++14",
-            "intelliSenseMode": "windows-gcc-arm"
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm"
         }
     ],
     "version": 4

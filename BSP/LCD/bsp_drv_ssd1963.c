@@ -1,5 +1,5 @@
-#include "drv_ssd1963.h"
-#include "delay.h"
+#include "bsp_drv_ssd1963.h"
+#include "bsp_delay.h"
 
 void LCD_FSMC_Init()
 {

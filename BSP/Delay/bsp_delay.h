@@ -1,5 +1,5 @@
-#ifndef __DELAY_H
-#define __DELAY_H
+#ifndef __BSP_DELAY_H
+#define __BSP_DELAY_H
 
 #include "stm32f4xx.h"                  // Device header
 

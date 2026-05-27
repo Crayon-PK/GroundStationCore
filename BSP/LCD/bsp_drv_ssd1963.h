@@ -1,5 +1,5 @@
-#ifndef __DRV_SSD1963_H
-#define __DRV_SSD1963_H
+#ifndef __BSP_DRV_SSD1963_H
+#define __BSP_DRV_SSD1963_H
 
 #include "stm32f4xx.h"                  // Device header
 

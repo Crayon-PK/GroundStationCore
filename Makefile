@@ -7,50 +7,62 @@ CC      = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 SIZE    = arm-none-eabi-size
 
-# 2. 目标与全局宏定义
-TARGET  = build/firmware
-DEFINES = -DSTM32F40_41xxx -DUSE_STDPERIPH_DRIVER -DHSE_VALUE=8000000
+# 2. 目标与构建目录
+TARGET    = build/firmware
 
-# 3. 头文件包含路径 (根据项目结构增删)
-INCLUDES = -IUser \
-           -IUser/bsp \
-           -IUser/app \
-           -ILibraries/CMSIS/Include \
-           -ILibraries/CMSIS/Device/ST/STM32F4xx/Include \
-           -ILibraries/STM32F4xx_StdPeriph_Driver/inc
+# 3. 全局宏定义
+DEFINES = \
+-DUSE_STDPERIPH_DRIVER \
+-DSTM32F40_41xxx \
+-DHSE_VALUE=8000000
 
-# 4. 源文件与核心底层文件
-STARTUP = Libraries/CMSIS/Device/ST/STM32F4xx/Source/startup_stm32f407xx.s
-LDSCRIPT = Libraries/CMSIS/Device/ST/STM32F4xx/Source/stm32f407vg_flash.ld
+# 4. 头文件包含路径
+INCLUDES = \
+-I./App \
+-I./App/Main \
+-I./BSP \
+-I./BSP/Delay \
+-I./BSP/LCD \
+-I./BSP/USART \
+-I./Platform/STM32F4 \
+-I./Platform/STM32F4/CMSIS/Include \
+-I./Platform/STM32F4/CMSIS/Device/Include \
+-I./Platform/STM32F4/StdPeriph/inc
 
-SRCS = $(wildcard User/*.c) \
-       $(wildcard User/bsp/*.c) \
-       $(wildcard User/app/*.c) \
-       Libraries/CMSIS/Device/ST/STM32F4xx/Source/system_stm32f4xx.c \
-       $(wildcard Libraries/STM32F4xx_StdPeriph_Driver/src/*.c)
+# 5. 链接脚本路径
+LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
 
-# 5. 编译参数 (开启 -O2 优化, 开启 FPU 硬件浮点, 开启无用函数回收)
-CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
-         -O2 $(DEFINES) $(INCLUDES) -g -gdwarf-2 \
-         -ffunction-sections -fdata-sections -std=gnu99
+# 6. 源文件自动查找 (不生成中间文件，直接编译源码)
+SRCS  := $(shell find ./App -name "*.c")
+SRCS  += $(shell find ./BSP -name "*.c")
+SRCS  += $(shell find ./Platform -name "*.c")
+SRCS  += $(shell find ./Platform -name "*.s")
 
-# 6. 链接参数 (启用垃圾回收机制)
-LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -lc -lm -lgcc
+# 7. 编译参数 (整合 -O2 优化、硬件浮点与垃圾回收)
+CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+CFLAGS += -O2 $(DEFINES) $(INCLUDES) -g -gdwarf-2
+CFLAGS += -Wall -ffunction-sections -fdata-sections -std=gnu99
+
+# 8. 链接参数
+LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -specs=nano.specs -lc -lm -lnosys -lgcc
 
 # ==========================================
 # 编译规则
 # ==========================================
 all: clean $(TARGET).hex
 
+# 生成 HEX
 $(TARGET).hex: $(TARGET).elf
 	@$(OBJCOPY) -O ihex $< $@
 	@$(SIZE) $<
 	@echo "==============================> Build Success!"
 
+# 直接通过源码编译并链接成 ELF (无中间 .o 文件)
 $(TARGET).elf:
 	@mkdir -p build
-	@$(CC) $(CFLAGS) $(SRCS) $(STARTUP) $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $(SRCS) $(LDFLAGS) -o $@
 
+# 清理
 clean:
 	@rm -rf build
 
@@ -59,3 +71,5 @@ clean:
 # ==========================================
 flash: all
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "program $(TARGET).hex verify reset exit"
+
+.PHONY: all clean flash

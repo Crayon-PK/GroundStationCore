@@ -1,5 +1,5 @@
-#ifndef __TELEMETERING_USART_H
-#define __TELEMETERING_USART_H
+#ifndef __BSP_TELEMETERING_USART_H
+#define __BSP_TELEMETERING_USART_H
 
 #include "stm32f4xx.h"                  // Device header
 
