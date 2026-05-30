@@ -3,18 +3,9 @@
         {
             "name": "STM32F4",
             "includePath": [
-                "${workspaceFolder}/App",
-                "${workspaceFolder}/App/Main",
-
-                "${workspaceFolder}/BSP",
-                "${workspaceFolder}/BSP/Delay",
-                "${workspaceFolder}/BSP/LCD",
-                "${workspaceFolder}/BSP/USART",
-
-                "${workspaceFolder}/Platform/STM32F4",
-                "${workspaceFolder}/Platform/STM32F4/CMSIS/Include",
-                "${workspaceFolder}/Platform/STM32F4/CMSIS/Device/Include",
-                "${workspaceFolder}/Platform/STM32F4/StdPeriph/inc"
+                "${workspaceFolder}/App/**",
+                "${workspaceFolder}/BSP/**",
+                "${workspaceFolder}/Platform/STM32F4/**"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",

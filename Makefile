@@ -17,26 +17,30 @@ DEFINES = \
 -DHSE_VALUE=8000000
 
 # 4. 头文件包含路径
-INCLUDES = \
--I./App \
--I./App/Main \
--I./BSP \
--I./BSP/Delay \
--I./BSP/LCD \
--I./BSP/USART \
--I./Platform/STM32F4 \
--I./Platform/STM32F4/CMSIS/Include \
--I./Platform/STM32F4/CMSIS/Device/Include \
--I./Platform/STM32F4/StdPeriph/inc
+ST_INCLUDES := -I./Platform/STM32F4 \
+               -I./Platform/STM32F4/CMSIS/Include \
+               -I./Platform/STM32F4/CMSIS/Device/Include \
+               -I./Platform/STM32F4/StdPeriph/inc
+
+USER_INC_DIRS := ./App ./App/* ./App/*/* ./BSP ./BSP/* ./BSP/*/*
+RAW_DIRS      := $(wildcard $(USER_INC_DIRS))
+CLEAN_DIRS    := $(sort $(foreach dir, $(RAW_DIRS), $(if $(wildcard $(dir)/.), $(dir))))
+USER_INCLUDES := $(addprefix -I, $(CLEAN_DIRS))
+
+INCLUDES := $(ST_INCLUDES) $(USER_INCLUDES)
 
 # 5. 链接脚本路径
 LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
 
-# 6. 源文件自动查找 (不生成中间文件，直接编译源码)
-SRCS  := $(shell find ./App -name "*.c")
-SRCS  += $(shell find ./BSP -name "*.c")
-SRCS  += $(shell find ./Platform -name "*.c")
-SRCS  += $(shell find ./Platform -name "*.s")
+# 6. 源文件自动查找
+ST_SRCS := ./Platform/STM32F4/CMSIS/Device/Source/system_stm32f4xx.c \
+           $(wildcard ./Platform/STM32F4/StdPeriph/src/*.c) \
+           ./Platform/STM32F4/startup_stm32f407xx.s
+
+USER_SRCS := $(wildcard ./App/*.c) $(wildcard ./App/*/*.c) $(wildcard ./App/*/*/*.c) \
+             $(wildcard ./BSP/*.c) $(wildcard ./BSP/*/*.c) $(wildcard ./BSP/*/*/*.c)
+
+SRCS := $(ST_SRCS) $(USER_SRCS)
 
 # 7. 编译参数 (整合 -O2 优化、硬件浮点与垃圾回收)
 CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -57,14 +61,13 @@ $(TARGET).hex: $(TARGET).elf
 	@$(SIZE) $<
 	@echo "==============================> Build Success!"
 
-# 直接通过源码编译并链接成 ELF (无中间 .o 文件)
+# 直接通过源码编译并链接成 ELF
 $(TARGET).elf:
 	@mkdir -p build
 	$(CC) $(CFLAGS) $(SRCS) $(LDFLAGS) -o $@
 
-# 清理
 clean:
-	@rm -rf build
+	@rm -rf build/*
 
 # ==========================================
 # 烧录规则 (OpenOCD + ST-Link)

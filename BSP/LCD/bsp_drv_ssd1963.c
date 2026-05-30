@@ -1,5 +1,5 @@
 #include "bsp_drv_ssd1963.h"
-#include "bsp_delay.h"
+#include "timer_tick.h"
 
 void LCD_FSMC_Init()
 {
@@ -145,7 +145,7 @@ void LCD_Init()
 	
 	// 软件复位
 	LCD_Write_Cmd(CMD_SOFT_RESET);
-	delay_ms(20);
+	Delay_ms(20);
 	
 	// 配置 PLL 的 M 和 N
 	LCD_Write_Cmd(CMD_SET_PLL_MN);
@@ -156,7 +156,7 @@ void LCD_Init()
 	// 开启 PLL 
 	LCD_Write_Cmd(CMD_SET_PLL);
 	LCD_Write_Data(0x01);
-	delay_us(100);
+	Delay_us(100);
 
 	// 切换屏幕系统时钟到 PLL 输出
 	LCD_Write_Cmd(CMD_SET_PLL);
@@ -164,7 +164,7 @@ void LCD_Init()
 	
 	// 再次软件复位，让屏幕在新的 100MHz 高速时钟下重新投产
 	LCD_Write_Cmd(CMD_SOFT_RESET);
-	delay_ms(10);
+	Delay_ms(10);
 	
 	// 配置 LCD 面板模式与分辨率
 	LCD_Write_Cmd(CMD_SET_LCD_MODE_);
@@ -218,7 +218,7 @@ void LCD_Init()
 	
 	// 退出睡眠模式
 	LCD_Write_Cmd(CMD_EXIT_SLEEP_MODE);
-	delay_ms(20);
+	Delay_ms(20);
 	
 	// 开启显示
 	LCD_Write_Cmd(CMD_SET_DISPLAY_ON);
