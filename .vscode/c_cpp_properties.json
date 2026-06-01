@@ -5,7 +5,9 @@
             "includePath": [
                 "${workspaceFolder}/App/**",
                 "${workspaceFolder}/BSP/**",
-                "${workspaceFolder}/Platform/STM32F4/**"
+                "${workspaceFolder}/Platform/STM32F4/**",
+                "${workspaceFolder}/Middlewares/FreeRTOS/include",
+                "${workspaceFolder}/Middlewares/FreeRTOS/port"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",

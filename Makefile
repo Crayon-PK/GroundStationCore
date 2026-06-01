@@ -22,12 +22,15 @@ ST_INCLUDES := -I./Platform/STM32F4 \
                -I./Platform/STM32F4/CMSIS/Device/Include \
                -I./Platform/STM32F4/StdPeriph/inc
 
+RTOS_INCLUDES := -I./Middlewares/FreeRTOS/include \
+                 -I./Middlewares/FreeRTOS/port
+
 USER_INC_DIRS := ./App ./App/* ./App/*/* ./BSP ./BSP/* ./BSP/*/*
 RAW_DIRS      := $(wildcard $(USER_INC_DIRS))
 CLEAN_DIRS    := $(sort $(foreach dir, $(RAW_DIRS), $(if $(wildcard $(dir)/.), $(dir))))
 USER_INCLUDES := $(addprefix -I, $(CLEAN_DIRS))
 
-INCLUDES := $(ST_INCLUDES) $(USER_INCLUDES)
+INCLUDES := $(ST_INCLUDES) $(USER_INCLUDES) $(RTOS_INCLUDES)
 
 # 5. 链接脚本路径
 LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
@@ -37,10 +40,13 @@ ST_SRCS := ./Platform/STM32F4/CMSIS/Device/Source/system_stm32f4xx.c \
            $(wildcard ./Platform/STM32F4/StdPeriph/src/*.c) \
            ./Platform/STM32F4/startup_stm32f407xx.s
 
+RTOS_SRCS := $(wildcard ./Middlewares/FreeRTOS/src/*.c) \
+             $(wildcard ./Middlewares/FreeRTOS/port/*.c)
+
 USER_SRCS := $(wildcard ./App/*.c) $(wildcard ./App/*/*.c) $(wildcard ./App/*/*/*.c) \
              $(wildcard ./BSP/*.c) $(wildcard ./BSP/*/*.c) $(wildcard ./BSP/*/*/*.c)
 
-SRCS := $(ST_SRCS) $(USER_SRCS)
+SRCS := $(ST_SRCS) $(RTOS_SRCS) $(USER_SRCS)
 
 # 7. 编译参数 (整合 -O2 优化、硬件浮点与垃圾回收)
 CFLAGS = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
