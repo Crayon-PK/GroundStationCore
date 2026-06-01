@@ -1,17 +1,21 @@
-#ifndef __BSP_DRV_SSD1963_H
-#define __BSP_DRV_SSD1963_H
+#ifndef __LCD_SSD1963_H
+#define __LCD_SSD1963_H
 
-#include "stm32f4xx.h"                  // Device header
+#include "stm32f4xx.h"
 
-typedef struct{
-	__IO uint16_t LCD_REG;
-	__IO uint16_t LCD_RAM;
-	
-}LCD_TypeDef;
+/* 屏幕物理尺寸定义 */
+#define LCD_WIDTH                    800
+#define LCD_HEIGHT                   480
 
-#define LCD_BASE        ((uint32_t)(0x6C000000 | 0x0000007E))
-#define LCD             ((LCD_TypeDef *) LCD_BASE)
+typedef struct {
+    __IO uint16_t LCD_REG;
+    __IO uint16_t LCD_RAM;
+} LCD_TypeDef;
 
+#define LCD_BASE                     ((uint32_t)(0x6C000000 | 0x0000007E))
+#define LCD                          ((LCD_TypeDef *) LCD_BASE)
+
+/* 指令宏定义 */
 #define CMD_NOP                      0x00
 #define CMD_SOFT_RESET               0x01
 #define CMD_GET_POWER_MODE           0x0A
@@ -88,25 +92,25 @@ typedef struct{
 #define CMD_SET_PIXEL_DATA_INTERFACE 0xF0
 #define CMD_GET_PIXEL_DATA_INTERFACE 0xF1
 
-// 片选引脚 CS -> 对应 FSMC_NE4 (PG12)
-#define LCD_CS_PORT          GPIOG
-#define LCD_CS_PIN           GPIO_Pin_12
-#define LCD_CS_PIN_SOURCE    GPIO_PinSource12
+/* 接口引脚定义 */
+#define LCD_CS_PORT                  GPIOG
+#define LCD_CS_PIN                   GPIO_Pin_12
+#define LCD_CS_PIN_SOURCE            GPIO_PinSource12
 
-// 命令/数据选择引脚 RS -> 对应 FSMC_A6 (PF12)
-#define LCD_RS_PORT          GPIOF
-#define LCD_RS_PIN           GPIO_Pin_12
-#define LCD_RS_PIN_SOURCE    GPIO_PinSource12
+#define LCD_RS_PORT                  GPIOF
+#define LCD_RS_PIN                   GPIO_Pin_12
+#define LCD_RS_PIN_SOURCE            GPIO_PinSource12
 
-// 背光控制引脚 BL (PB15)
-#define LCD_BL_PORT          GPIOB
-#define LCD_BL_PIN           GPIO_Pin_15
+#define LCD_BL_PORT                  GPIOB
+#define LCD_BL_PIN                   GPIO_Pin_15
 
+/* 外部可调用函数声明 */
 void LCD_Init(void);
 uint16_t LCD_Read_ID(void);
 void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 void LCD_Color_Fill(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t *color_p);
 void LCD_Fill_Solid(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);
 void LCD_Clear(uint16_t color);
-	
-#endif
+void LCD_Switch_FastMode(uint32_t fast_data_setup);
+
+#endif /* __LCD_SSD1963_H */

@@ -1,1 +1,5 @@
+# 屏蔽 build 目录下的编译产物
 /build/
+
+# 屏蔽 Cline 插件的项目本地规则文件
+.clinerules
