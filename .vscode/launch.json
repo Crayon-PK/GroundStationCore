@@ -4,17 +4,21 @@
         {
             "name": "STM32F407_Debug",
             "cwd": "${workspaceFolder}",
-            "executable": "./build/firmware.elf", // 指向生成的带调试符号的 elf 文件
+            "executable": "./build/firmware.elf", 
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
             "device": "STM32F407VG",
+            "interface": "swd",
             "configFiles": [
-                "interface/stlink.cfg", // 硬件：ST-Link
-                "target/stm32f4x.cfg"   // 芯片：STM32F4 系列
+                "interface/stlink.cfg", 
+                "target/stm32f4x.cfg"   
             ],
-            "runToEntryPoint": "main", // 按 F5 后程序自动停在 main 函数第一行等你
-            "showDevDebugOutput": "none"
+            "runToEntryPoint": "main", 
+            "showDevDebugOutput": "none",
+            "armToolchainPath": "C:/Program Files (x86)/Arm/GNU Toolchain mingw-w64-i686-arm-none-eabi/bin",
+            "gdbPath": "arm-none-eabi-gdb",
+            "serverpath": "C:/openocd/xpack-openocd-0.12.0-7/bin/openocd.exe"
         }
     ]
 }

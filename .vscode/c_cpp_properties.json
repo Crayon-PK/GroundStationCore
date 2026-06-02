@@ -7,7 +7,11 @@
                 "${workspaceFolder}/BSP/**",
                 "${workspaceFolder}/Platform/STM32F4/**",
                 "${workspaceFolder}/Middlewares/FreeRTOS/include",
-                "${workspaceFolder}/Middlewares/FreeRTOS/port"
+                "${workspaceFolder}/Middlewares/FreeRTOS/port",
+                "${workspaceFolder}/Middlewares/LVGL",
+                "${workspaceFolder}/Middlewares/LVGL/porting",
+                "${workspaceFolder}/Middlewares/LVGL/src",
+                "${workspaceFolder}/Middlewares/LVGL/src/**"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",

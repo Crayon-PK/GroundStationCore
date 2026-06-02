@@ -37,10 +37,7 @@ typedef struct
 
 /* 外部可调用函数声明 */
 void touch_GPIO_Init(void);
-void GT911_Reset(void);
-uint8_t GT911_Init(void);
+int GT911_Init(void);
 uint8_t GT911_Scan(CT_Point_t *points, uint8_t max_points_to_read);
-uint8_t GT911_Write_Reg(uint16_t reg, uint8_t *buf, uint8_t len);
-void GT911_Read_Reg(uint16_t reg, uint8_t *buf, uint8_t len);
 
 #endif /* __TOUCH_GT911_H */

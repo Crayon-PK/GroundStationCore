@@ -240,28 +240,32 @@ void GT911_Read_Reg(uint16_t reg, uint8_t *buf, uint8_t len)
 }
 
 /**
- * @brief       GT911 初始化函数
- * @retval      0: 成功识别芯片; 1: 初始化或PID读取失败
+ * @brief       GT911 初始化与通信状态多级校验
+ * @retval      0:成功; -2:I2C断线无响应; -3:未知的兼容触摸芯片
  */
-uint8_t GT911_Init(void)
+int GT911_Init(void)
 {
-    char pid[5] = {0};
+    char product_id[5];
     
     touch_GPIO_Init();
     GT911_Reset();
     
-    // 读取 4 字节的 PID 字符串
-    GT911_Read_Reg(GT911_REG_PID, (uint8_t *)pid, 4);
-    pid[4] = '\0';
+    // 读取 4 字节 Product ID（ASCII）
+    GT911_Read_Reg(GT911_REG_PID, (uint8_t *)product_id, 4);
+    product_id[4] = '\0';
     
-    // 验证读取出的 PID 是否属于合法固件版本
-    if (strcmp(pid, "911") == 0 || strcmp(pid, "9147") == 0 || 
-        strcmp(pid, "9271") == 0 || strcmp(pid, "1158") == 0)
+    if (product_id[0] == 0x00 || (uint8_t)product_id[0] == 0xFF)
     {
-        return 0; // 成功识别
+        return -2;
     }
     
-    return 1; // 通信或设备异常
+    if (strcmp(product_id, "911") == 0 || strcmp(product_id, "9147") == 0 || 
+        strcmp(product_id, "9271") == 0 || strcmp(product_id, "1158") == 0)
+    {
+        return 0;
+    }
+    
+    return -3;
 }
 
 /**

@@ -1,112 +1,95 @@
+#include "FreeRTOS.h"
+#include "task.h"
 #include "lcd_ssd1963.h"
 #include "timer_tick.h"
 #include "touch_gt911.h"
+/* 引入升级后的 LVGL 核心组件 */
+#include "lvgl.h"
+#include "lv_port_disp.h"
+#include "lv_port_indev.h"
 
-/* 必须引入 FreeRTOS 的核心头文件 */
-#include "FreeRTOS.h"
-#include "task.h"
+/* 任务管理句柄 */
+TaskHandle_t LVGLTask_Handler = NULL;
 
-/* 触摸数据缓存 */
-CT_Point_t touch_points[5]; 
-
-/* 声明任务句柄（用于管理任务，可选） */
-TaskHandle_t TouchTask_Handler = NULL;
-TaskHandle_t BlinkTask_Handler = NULL;
-
-/* 声明任务函数原型 */
-void vTask_TouchPad(void *pvParameters);
-void vTask_Blink(void *pvParameters);
+void vTask_LVGL_Driver(void *pvParameters);
+static void btn_click_event_cb(lv_event_t * e);
 
 int main(void)
 {
+    // 按你的配置，FreeRTOS 下必须中断分组全为 4
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
-    // 1. 硬件基础初始化（此时依然是裸机环境）
+    
+    // 1. 硬件时基源初始化
     System_Timebase_Init();
     LCD_Init();
+    GT911_Init();
+    // 2. 初始化 LVGL 核心图形库
+    lv_init();
     
-    // 2. 检查 GT911 初始化
-    if (GT911_Init() == 0)
-    {
-        LCD_Clear(0xFFFF); // 初始化成功，刷白屏作为画板
-    }
-    else
-    {
-        LCD_Clear(0xF800); // 初始化失败，刷红屏报警
-        while(1); 
-    }
+    // 3. 注册你的 SSD1963 屏幕驱动与 GT911 触摸驱动
+    lv_port_disp_init();
+    lv_port_indev_init();
 
-    // 3. 【核心动作】：动态创建并行任务
-    // 创建触摸画板任务
-    xTaskCreate((TaskFunction_t )vTask_TouchPad,     // 任务函数指针
-                (const char* )"Task_Touch",       // 任务调试别名
-                (uint16_t       )512,                // 分配的堆栈大小（512字 = 2048字节，因为有触摸和画图算法，给大点）
-                (void* )NULL,               // 传递给任务的参数
-                (UBaseType_t    )3,                  // 任务优先级（触摸画板需要实时响应，给高优先级 3）
-                (TaskHandle_t* )&TouchTask_Handler);// 任务句柄
-
-    // 创建后台闪烁/状态指示任务
-    xTaskCreate((TaskFunction_t )vTask_Blink, 
-                (const char* )"Task_Blink", 
-                (uint16_t       )128,                // 简单跑马灯，128字堆栈足够
+    // 4. 创建 LVGL 核心高优先级执行任务
+    xTaskCreate((TaskFunction_t )vTask_LVGL_Driver, 
+                (const char* )"Task_LVGL", 
+                (uint16_t       )1024, // 留足 4096 字节
                 (void* )NULL, 
-                (UBaseType_t    )2,                  // 优先级给 2，比触摸任务低
-                (TaskHandle_t* )&BlinkTask_Handler);
+                (UBaseType_t    )3,    // 优先级给 3 保证流畅度
+                (TaskHandle_t* )&LVGLTask_Handler);
 
-    // 4. 【大功告成】：启动 FreeRTOS 任务调度器
-    // 这一步一敲下，CPU 就会开始触发 SVC 中断，彻底告别 main 的 while(1)，完全由操作系统接管
+    // 5. 启动系统任务调度器
     vTaskStartScheduler();          
 
-    // 如果操作系统正常运行，代码绝对不会执行到这里！
-    while (1)
-    {
-        LCD_Clear(0x001F); // 如果跑到了这里，说明堆内存不够，系统崩溃了，刷蓝屏报警
-    }
+    while (1);
 }
 
 /**
-  * @brief  触摸画板主任务
+  * @brief  LVGL 核心轮询驱动任务
   */
-void vTask_TouchPad(void *pvParameters)
+void vTask_LVGL_Driver(void *pvParameters)
 {
-    uint8_t tp_cnt = 0;
-    uint16_t x = 0, y = 0;
+    /* ==========================================
+     * 创建一个可触控的按钮组件进行系统联调测试
+     * ========================================== */
+    lv_obj_t * btn = lv_btn_create(lv_scr_act());           // 创建按钮
+    lv_obj_set_size(btn, 200, 80);                          // 设置按钮大小
+    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);              // 按钮在 800x480 正中央居中
+    lv_obj_add_event_cb(btn, btn_click_event_cb, LV_EVENT_CLICKED, NULL); // 绑定点击回调
+
+    lv_obj_t * label = lv_label_create(btn);                // 在按钮内创建文字标签
+    lv_label_set_text(label, "Click Count: 0");             // 初始文本
+    lv_obj_center(label);                                   // 文字在按钮内居中
 
     while (1)
     {
-        // 轮询扫描触摸屏
-        tp_cnt = GT911_Scan(touch_points, 1);
+        // 核心周期处理函数：会自动调用你的 disp_flush 和 touchpad_read
+        lv_timer_handler(); 
         
-        if (tp_cnt > 0)
-        {
-            x = 800 - touch_points[0].x;
-            y = touch_points[0].y;
-            
-            if (x < 790 && y < 470) 
-            {
-                // 在触摸位置画黑色小方块
-                LCD_Fill_Solid(x, y, x + 10, y + 10, 0x0000);
-            }
-        }
-        
-        // 【避坑铁律】：绝对不能再用 Delay_ms(10)！
-        // 必须换用系统的非阻塞延时。在这 10ms 挂起期间，CPU 会自动去跑下面的 Blink 任务
+        // 配合时钟切出执行权 10ms
         vTaskDelay(pdMS_TO_TICKS(10)); 
     }
 }
 
 /**
-  * @brief  后台状态指示任务（验证多任务是否并发成功）
+  * @brief  按钮点击事件回调函数
   */
-void vTask_Blink(void *pvParameters)
+static void btn_click_event_cb(lv_event_t * e)
 {
-    while (1)
-    {
-        // 在屏幕的左上角极小的区域（0,0 到 10,10）交替闪烁红色和绿色
-        // 如果你一边用手指在屏幕上流畅地画方块，左上角的色块还在以 500ms 的频率独自闪烁，说明任务切换完美！
-        LCD_Fill_Solid(0, 0, 10, 10, 0xF800); // 红色
-        vTaskDelay(pdMS_TO_TICKS(500));        // 挂起 500ms
-        
-        LCD_Fill_Solid(0, 0, 10, 10, 0x07E0); // 绿色
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
+    static uint32_t cnt = 0;
+    lv_obj_t * btn = lv_event_get_target(e);                // 获取触发事件的按钮对象
+    lv_obj_t * label = lv_obj_get_child(btn, 0);            // 获取按钮内的第一个子对象（即文本标签）
+    
+    cnt++;
+    // 动态刷新按钮内部的点击计数值，用作屏幕与触摸同步的终极验证
+    lv_label_set_text_fmt(label, "Click Count: %ld", cnt);
+}
+
+/**
+  * @brief  FreeRTOS 系统时基钩子（由操作系统时钟每 1ms 自动调用）
+  */
+void vApplicationTickHook(void)
+{
+    // 为 LVGL 提供精准的生命心跳
+    lv_tick_inc(1);
 }

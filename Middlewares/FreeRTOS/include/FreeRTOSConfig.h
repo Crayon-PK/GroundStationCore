@@ -8,7 +8,7 @@
 #define configTICK_RATE_HZ                      1000    // 1ms 一次系统心跳
 #define configMAX_PRIORITIES                    32      // 最大优先级数量
 #define configMINIMAL_STACK_SIZE                ((unsigned short)130)
-#define configTOTAL_HEAP_SIZE                   ((size_t)(64 * 1024)) // 64KB 堆空间
+#define configTOTAL_HEAP_SIZE                   ((size_t)(15 * 1024)) // 15KB 堆空间
 
 /* 核心修复：新版内核严格校验，只允许定义位数，禁止同时定义16位使能宏 */
 #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS

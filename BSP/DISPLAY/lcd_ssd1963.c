@@ -153,11 +153,14 @@ void LCD_Switch_FastMode(uint32_t fast_data_setup)
 }
 
 /**
-  * @brief       初始化LCD控制器
-  * @note        包含FSMC初始化、PLL配置、时序设置等完整初始化流程
+  * @brief  初始化LCD控制器并校验芯片ID
+  * @retval 0:成功; -1:FSMC使能超时; -2:未检测到屏幕; -3:未知或兼容芯片
   */
-void LCD_Init(void)
+int LCD_Init(void)
 {
+    uint16_t lcd_id = 0;
+    uint32_t timeout = 0xFFFF; // 引入超时计数器
+    
     LCD_FSMC_Init();
     
     LCD_Write_Cmd(CMD_SOFT_RESET);
@@ -212,10 +215,27 @@ void LCD_Init(void)
     LCD_Write_Cmd(CMD_SET_PIXEL_DATA_INTERFACE);
     LCD_Write_Data(0x03);  // 16位 RGB565 格式
     
+    LCD_Write_Cmd(CMD_SET_ADDRESS_MODE);   // 发送 Set Address Mode 命令
+    LCD_Write_Data(0x40);
+
     LCD_Switch_FastMode(0x0F); 
     
-    LCD_Clear(0xFFFF);
+    // 检查 FSMC 底层硬件使能状态，防止死锁
+    while ((FSMC_Bank1->BTCR[6] & 0x01) == 0)
+    {
+        if (timeout-- == 0) return -1;
+    }
+
+    // 读取芯片 ID 并进行合法性校验
+    lcd_id = LCD_Read_ID();
     
+    if (lcd_id == 0x0000 || lcd_id == 0xFFFF) 
+    {
+        return -2;
+    }
+    
+    LCD_Clear(0xFFFF);
+
     LCD_Write_Cmd(CMD_SET_PWM_CONF); 
     LCD_Write_Data(0x01);
     LCD_Write_Data(0xFF);
@@ -228,6 +248,13 @@ void LCD_Init(void)
     Delay_ms(20);
     
     LCD_Write_Cmd(CMD_SET_DISPLAY_ON);
+    
+    if (lcd_id != 0x1963 && lcd_id != 0x570B) 
+    {
+        return -3;
+    }
+
+    return 0; // 初始化成功
 }
 
 /**

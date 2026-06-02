@@ -105,7 +105,7 @@ typedef struct {
 #define LCD_BL_PIN                   GPIO_Pin_15
 
 /* 外部可调用函数声明 */
-void LCD_Init(void);
+int LCD_Init(void);
 uint16_t LCD_Read_ID(void);
 void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 void LCD_Color_Fill(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t *color_p);

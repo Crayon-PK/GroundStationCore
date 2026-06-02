@@ -2,29 +2,43 @@
 #include <stddef.h>
 
 static uint8_t g_ring_buffer[TELEMETRY_BUFF_SIZE];
+static uint16_t g_last_read_ptr = 0; 
+
 static Telemetry_RxCallback_t g_rx_callback = NULL;
+static Telemetry_TxCallback_t g_tx_callback = NULL;
 
 /**
-  * @brief  注册串口数据接收回调函数
-  * @param  callback: 指向回调函数的指针，格式为 void(*)(uint8_t*, uint16_t)
+  * @brief  注册串口接收完成（IDLE）回调函数
+  * @param  callback: 应用层接收回调函数指针
   */
-void Telemetry_UART_RegisterCallback(Telemetry_RxCallback_t callback)
-{
-    g_rx_callback = callback;
+void Telemetry_UART_RegisterRxCallback(Telemetry_RxCallback_t callback) 
+{ 
+    g_rx_callback = callback; 
 }
 
 /**
-  * @brief  初始化USART3的DMA传输配置
-  * @param  buffer: 指向DMA接收缓冲区的指针
-  * @param  size: DMA接收缓冲区的大小(字节)
+  * @brief  注册串口发送完成（DMA-TC）回调函数
+  * @param  callback: 应用层发送完成回调函数指针
   */
-static void Telemetry_UART_DMA_Init(uint8_t* buffer, uint16_t size)
+void Telemetry_UART_RegisterTxCallback(Telemetry_TxCallback_t callback) 
+{ 
+    g_tx_callback = callback; 
+}
+
+/**
+  * @brief  初始化USART3的DMA传输配置（RX循环模式，TX单次模式）
+  * @param  buffer: 接收缓冲区指针
+  * @param  size: 缓冲区大小
+  * @retval 0: 成功; -1: 硬件使能超时失败
+  */
+static int Telemetry_UART_DMA_Init(uint8_t* buffer, uint16_t size)
 {
-    if (buffer == NULL || size == 0) return;
+    uint32_t timeout = 0xFFFF;
+    if (buffer == NULL || size == 0) return -1;
 
     TELEMETRY_DMA_CLK_CMD(TELEMETRY_DMA_CLK, ENABLE);
     
-    // RX 配置 (DMA1_Stream1_Channel4)
+    // RX 配置
     DMA_DeInit(TELEMETRY_RX_DMA_STREAM);
     DMA_Init(TELEMETRY_RX_DMA_STREAM, &(DMA_InitTypeDef){
         .DMA_Channel            = TELEMETRY_RX_DMA_CHANNEL,
@@ -36,7 +50,7 @@ static void Telemetry_UART_DMA_Init(uint8_t* buffer, uint16_t size)
         .DMA_MemoryInc          = DMA_MemoryInc_Enable,
         .DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte,
         .DMA_MemoryDataSize     = DMA_MemoryDataSize_Byte,
-        .DMA_Mode               = DMA_Mode_Normal, // 变长包使用Normal
+        .DMA_Mode               = DMA_Mode_Circular, 
         .DMA_Priority           = DMA_Priority_High,
         .DMA_FIFOMode           = DMA_FIFOMode_Disable,
         .DMA_FIFOThreshold      = DMA_FIFOThreshold_HalfFull,
@@ -44,7 +58,7 @@ static void Telemetry_UART_DMA_Init(uint8_t* buffer, uint16_t size)
         .DMA_PeripheralBurst    = DMA_PeripheralBurst_Single
     });
     
-    // TX 配置 (DMA1_Stream3_Channel4)
+    // TX 配置
     DMA_DeInit(TELEMETRY_TX_DMA_STREAM);
     DMA_Init(TELEMETRY_TX_DMA_STREAM, &(DMA_InitTypeDef){
         .DMA_Channel            = TELEMETRY_TX_DMA_CHANNEL,
@@ -65,19 +79,27 @@ static void Telemetry_UART_DMA_Init(uint8_t* buffer, uint16_t size)
     });
     
     USART_DMACmd(TELEMETRY_UART, USART_DMAReq_Tx | USART_DMAReq_Rx, ENABLE);
+    DMA_ITConfig(TELEMETRY_TX_DMA_STREAM, DMA_IT_TC, ENABLE);
+
     DMA_Cmd(TELEMETRY_RX_DMA_STREAM, ENABLE);
+    
+    while(DMA_GetCmdStatus(TELEMETRY_RX_DMA_STREAM) == DISABLE)
+    {
+        if(timeout-- == 0) return -1;
+    }
+    return 0;
 }
 
 /**
-  * @brief  初始化遥测串口硬件外设
-  * @note   配置包括GPIO引脚、USART参数、DMA控制器和NVIC中断
+  * @brief  初始化遥测串口硬件外设（GPIO、USART、NVIC、DMA）
+  * @param  无
+  * @retval 0: 初始化成功; -1: 硬件配置或使能失败
   */
-void Telemetry_UART_Init(void)
+int Telemetry_UART_Init(void)
 {
     TELEMETRY_GPIO_CLK_CMD(TELEMETRY_GPIO_CLK, ENABLE);
     TELEMETRY_UART_CLK_CMD(TELEMETRY_UART_CLK, ENABLE);
     
-    // TX (PB10) - 复用推挽
     GPIO_Init(TELEMETRY_GPIO_PORT, &(GPIO_InitTypeDef){
         .GPIO_Pin   = TELEMETRY_TX_PIN,
         .GPIO_Mode  = GPIO_Mode_AF,
@@ -85,8 +107,6 @@ void Telemetry_UART_Init(void)
         .GPIO_Speed = GPIO_Speed_50MHz,
         .GPIO_PuPd  = GPIO_PuPd_UP
     });
-    
-    // RX (PB11) - 复用浮空/上拉
     GPIO_Init(TELEMETRY_GPIO_PORT, &(GPIO_InitTypeDef){
         .GPIO_Pin   = TELEMETRY_RX_PIN,
         .GPIO_Mode  = GPIO_Mode_AF,
@@ -106,70 +126,88 @@ void Telemetry_UART_Init(void)
         .USART_WordLength = USART_WordLength_8b,
     });
     
-    Telemetry_UART_DMA_Init(g_ring_buffer, TELEMETRY_BUFF_SIZE);
+    if (Telemetry_UART_DMA_Init(g_ring_buffer, TELEMETRY_BUFF_SIZE) != 0) return -1; 
     
     USART_ITConfig(TELEMETRY_UART, USART_IT_IDLE, ENABLE);
+    
     NVIC_Init(&(NVIC_InitTypeDef){
         .NVIC_IRQChannel                   = TELEMETRY_UART_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = 1,
+        .NVIC_IRQChannelPreemptionPriority = 5,
+        .NVIC_IRQChannelSubPriority        = 0,
+        .NVIC_IRQChannelCmd                = ENABLE
+    });
+    NVIC_Init(&(NVIC_InitTypeDef){
+        .NVIC_IRQChannel                   = TELEMETRY_TX_DMA_IRQn,
+        .NVIC_IRQChannelPreemptionPriority = 6,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd                = ENABLE
     });
     
     USART_Cmd(TELEMETRY_UART, ENABLE);
+    return 0;
 }
 
 /**
-  * @brief  通过DMA发送数据缓冲区
-  * @param  arr: 指向待发送数据缓冲区的指针
-  * @param  len: 待发送数据的长度(字节)
-  * @note   函数会等待前一次DMA传输完成后再启动新传输
+  * @brief  发起异步 DMA 发送（非阻塞寄存器配置）
+  * @param  arr: 待发送数据缓冲区指针
+  * @param  len: 待发送数据长度
   */
 void Telemetry_UART_SendBuffer_DMA(uint8_t* arr, uint16_t len)
 {
     if (arr == NULL || len == 0) return;
-
-    // 等待上一次发送完成
-    while(DMA_GetCmdStatus(TELEMETRY_TX_DMA_STREAM) != DISABLE);
-    
     TELEMETRY_TX_DMA_STREAM->M0AR = (uint32_t)arr;
     DMA_SetCurrDataCounter(TELEMETRY_TX_DMA_STREAM, len);
     DMA_ClearFlag(TELEMETRY_TX_DMA_STREAM, TELEMETRY_TX_DMA_FLAG_TC);
-    
     DMA_Cmd(TELEMETRY_TX_DMA_STREAM, ENABLE);
 }
 
 /**
+  * @brief  DMA1_Stream3全局中断服务函数（数传TX发送完成中断）
+  */
+void TELEMETRY_TX_DMA_IRQHandler(void)
+{
+    if (DMA_GetITStatus(TELEMETRY_TX_DMA_STREAM, TELEMETRY_TX_DMA_IT_TC) != RESET)
+    {
+        DMA_ClearITPendingBit(TELEMETRY_TX_DMA_STREAM, TELEMETRY_TX_DMA_IT_TC);
+        DMA_Cmd(TELEMETRY_TX_DMA_STREAM, DISABLE);
+        if (g_tx_callback != NULL) g_tx_callback();
+    }
+}
+
+/**
   * @brief  USART3全局中断服务函数
-  * @note   主要处理IDLE中断事件，在检测到总线空闲时读取DMA接收到的数据
-  *         并通过回调函数通知上层应用
+  * @param  无
+  * @retval 无
   */
 void TELEMETRY_UART_IRQHandler(void)
 {
     if(USART_GetITStatus(TELEMETRY_UART, USART_IT_IDLE) != RESET)
     {
-        // 清除硬件 IDLE 标志位
         volatile uint32_t clear = TELEMETRY_UART->SR;
         clear = TELEMETRY_UART->DR;
         (void)clear; 
-        
-        // 获取数据长度
-        uint16_t rx_len = TELEMETRY_BUFF_SIZE - DMA_GetCurrDataCounter(TELEMETRY_RX_DMA_STREAM);
-        
-        if(rx_len > 0)
+
+        uint16_t current_ptr = TELEMETRY_BUFF_SIZE - DMA_GetCurrDataCounter(TELEMETRY_RX_DMA_STREAM);
+        uint16_t rx_len = 0;
+
+        if (current_ptr != g_last_read_ptr)
         {
-            // 暂时关闭 DMA 接收以重置计数器
-            DMA_Cmd(TELEMETRY_RX_DMA_STREAM, DISABLE);
-            while(DMA_GetCmdStatus(TELEMETRY_RX_DMA_STREAM) != DISABLE);
-            
-            if(g_rx_callback != NULL)
+            if (current_ptr > g_last_read_ptr)
             {
-                g_rx_callback(g_ring_buffer, rx_len);
+                rx_len = current_ptr - g_last_read_ptr;
+                if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
             }
-            
-            DMA_SetCurrDataCounter(TELEMETRY_RX_DMA_STREAM, TELEMETRY_BUFF_SIZE);
-            DMA_ClearFlag(TELEMETRY_RX_DMA_STREAM, TELEMETRY_RX_DMA_FLAG_TC);
-            DMA_Cmd(TELEMETRY_RX_DMA_STREAM, ENABLE);
+            else 
+            {
+                rx_len = TELEMETRY_BUFF_SIZE - g_last_read_ptr;
+                if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
+                
+                if (current_ptr > 0)
+                {
+                    if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[0], current_ptr);
+                }
+            }
+            g_last_read_ptr = current_ptr; 
         }
     }
 }
