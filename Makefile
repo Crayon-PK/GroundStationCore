@@ -14,6 +14,7 @@ include ./App/app.mk
 include ./BSP/bsp.mk
 include ./Middlewares/FreeRTOS/freertos.mk
 include ./Middlewares/LVGL/lvgl_port.mk
+include ./Middlewares/MAVLink/mavlink.mk
 
 DEFINES = \
 -DUSE_STDPERIPH_DRIVER \
@@ -26,7 +27,7 @@ CFLAGS += -O2 $(DEFINES) $(C_INCLUDES) -g -gdwarf-2
 CFLAGS += -Wall -ffunction-sections -fdata-sections -std=gnu99
 
 LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
-LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -specs=nano.specs -lc -lm -lnosys -lgcc
+LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -specs=nano.specs --specs=nosys.specs -u _printf_float -lc -lm -lnosys -lgcc
 
 CLEAN_SRCS := $(patsubst ./%, %, $(C_SOURCES))
 CLEAN_ASMS := $(patsubst ./%, %, $(ASM_SOURCES))

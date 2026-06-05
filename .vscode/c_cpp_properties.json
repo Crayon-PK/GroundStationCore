@@ -11,14 +11,18 @@
                 "${workspaceFolder}/Middlewares/LVGL",
                 "${workspaceFolder}/Middlewares/LVGL/porting",
                 "${workspaceFolder}/Middlewares/LVGL/src",
-                "${workspaceFolder}/Middlewares/LVGL/src/**"
+                "${workspaceFolder}/Middlewares/LVGL/src/**",
+                "${workspaceFolder}/Middlewares/MAVLink/",
+                "${workspaceFolder}/Middlewares/MAVLink/common",
+                "${workspaceFolder}/Middlewares/MAVLink/minimal",
+                "${workspaceFolder}/Middlewares/MAVLink/standard"
             ],
             "defines": [
                 "USE_STDPERIPH_DRIVER",
                 "STM32F40_41xxx"
             ],
             "compilerPath": "arm-none-eabi-gcc",
-            "cStandard": "c11",
+            "cStandard": "gnu99",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-arm"
         }

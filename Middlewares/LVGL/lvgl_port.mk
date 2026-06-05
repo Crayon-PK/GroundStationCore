@@ -1,4 +1,4 @@
-LVGL_DIR_NAME := Middlewares/LVGL
+LVGL_DIR_NAME := ./Middlewares/LVGL
 
 C_INCLUDES += \
     -I./$(LVGL_DIR_NAME) \
