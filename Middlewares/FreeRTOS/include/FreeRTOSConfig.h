@@ -8,16 +8,15 @@
 #define configTICK_RATE_HZ                      1000        // 1ms 一次系统心跳
 #define configMAX_PRIORITIES                    32          // 最大优先级数量
 #define configMINIMAL_STACK_SIZE                ((unsigned short)130)
-#define configTOTAL_HEAP_SIZE                   ((size_t)(15 * 1024)) // 15KB 堆空间
+#define configTOTAL_HEAP_SIZE                   ((size_t)(50 * 1024)) // 50KB 堆空间
 #define configUSE_MUTEXES                       1           // 1:启用互斥锁         
 
 #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
 
-/* 核心钩子函数显式关闭（新版内核要求必须显式定义为0或1） */
+/* 核心钩子函数显式关闭 */
 #define configUSE_IDLE_HOOK                     0
 #define configUSE_TICK_HOOK                     0
-#define configUSE_MALLOC_FAILED_HOOK            0
-
+#define configUSE_MALLOC_FAILED_HOOK            1
 /* 内存分配与软件定时器 */
 #define configSUPPORT_DYNAMIC_ALLOCATION        1       
 #define configSUPPORT_STATIC_ALLOCATION         0       

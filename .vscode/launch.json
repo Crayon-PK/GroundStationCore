@@ -4,21 +4,30 @@
         {
             "name": "STM32F407_Debug",
             "cwd": "${workspaceFolder}",
-            "executable": "./build/firmware.elf", 
+            "executable": "${workspaceFolder}/build/firmware.elf",
+
             "request": "launch",
             "type": "cortex-debug",
+
             "servertype": "openocd",
+
+            "serverpath": "C:/openocd/xpack-openocd-0.12.0-7/bin/openocd.exe",
+
             "device": "STM32F407VG",
             "interface": "swd",
+
             "configFiles": [
-                "interface/stlink.cfg", 
-                "target/stm32f4x.cfg"   
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
             ],
-            "runToEntryPoint": "main", 
-            "showDevDebugOutput": "none",
-            "armToolchainPath": "C:/Program Files (x86)/Arm/GNU Toolchain mingw-w64-i686-arm-none-eabi/bin",
-            "gdbPath": "arm-none-eabi-gdb",
-            "serverpath": "C:/openocd/xpack-openocd-0.12.0-7/bin/openocd.exe"
+
+            "runToEntryPoint": "main",
+
+            //"showDevDebugOutput": "raw",
+
+            "gdbPath": "C:/Program Files (x86)/Arm/arm-gnu-toolchain-15.2.rel1-mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+
+            "svdFile": "${workspaceFolder}/STM32F407.svd"
         }
     ]
 }

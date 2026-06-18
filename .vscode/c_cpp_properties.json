@@ -4,7 +4,9 @@
             "name": "STM32F4",
             "includePath": [
                 "${workspaceFolder}/App/**",
+                "${workspaceFolder}/App/widgets/**",
                 "${workspaceFolder}/BSP/**",
+                "${workspaceFolder}/Tasks/**",
                 "${workspaceFolder}/Platform/STM32F4/**",
                 "${workspaceFolder}/Middlewares/FreeRTOS/include",
                 "${workspaceFolder}/Middlewares/FreeRTOS/port",

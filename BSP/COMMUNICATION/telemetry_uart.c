@@ -110,7 +110,6 @@ int Telemetry_UART_Init(void)
     GPIO_Init(TELEMETRY_GPIO_PORT, &(GPIO_InitTypeDef){
         .GPIO_Pin   = TELEMETRY_RX_PIN,
         .GPIO_Mode  = GPIO_Mode_AF,
-        .GPIO_OType = GPIO_OType_PP,
         .GPIO_Speed = GPIO_Speed_50MHz,
         .GPIO_PuPd  = GPIO_PuPd_UP
     });
@@ -187,27 +186,30 @@ void TELEMETRY_UART_IRQHandler(void)
         clear = TELEMETRY_UART->DR;
         (void)clear; 
 
-        uint16_t current_ptr = TELEMETRY_BUFF_SIZE - DMA_GetCurrDataCounter(TELEMETRY_RX_DMA_STREAM);
-        uint16_t rx_len = 0;
-
-        if (current_ptr != g_last_read_ptr)
+        if (g_rx_callback != NULL)
         {
-            if (current_ptr > g_last_read_ptr)
+            uint16_t current_ptr = TELEMETRY_BUFF_SIZE - DMA_GetCurrDataCounter(TELEMETRY_RX_DMA_STREAM);
+            uint16_t rx_len = 0;
+
+            if (current_ptr != g_last_read_ptr)
             {
-                rx_len = current_ptr - g_last_read_ptr;
-                if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
-            }
-            else 
-            {
-                rx_len = TELEMETRY_BUFF_SIZE - g_last_read_ptr;
-                if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
-                
-                if (current_ptr > 0)
+                if (current_ptr > g_last_read_ptr)
                 {
-                    if(g_rx_callback != NULL) g_rx_callback(&g_ring_buffer[0], current_ptr);
+                    rx_len = current_ptr - g_last_read_ptr;
+                    g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
                 }
+                else 
+                {
+                    rx_len = TELEMETRY_BUFF_SIZE - g_last_read_ptr;
+                    g_rx_callback(&g_ring_buffer[g_last_read_ptr], rx_len);
+                    
+                    if (current_ptr > 0)
+                    {
+                        g_rx_callback(&g_ring_buffer[0], current_ptr);
+                    }
+                }
+                g_last_read_ptr = current_ptr; 
             }
-            g_last_read_ptr = current_ptr; 
         }
     }
 }

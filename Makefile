@@ -9,12 +9,20 @@ C_INCLUDES =
 C_SOURCES =
 ASM_SOURCES =
 
+# 包含各模块的编译配置
 include ./Platform/STM32F4/stm32f407.mk
 include ./App/app.mk
 include ./BSP/bsp.mk
+include ./Tasks/tasks.mk
 include ./Middlewares/FreeRTOS/freertos.mk
 include ./Middlewares/LVGL/lvgl_port.mk
 include ./Middlewares/MAVLink/mavlink.mk
+
+CLEAN_SRCS := $(patsubst ./%, %, $(C_SOURCES))
+CLEAN_ASMS := $(patsubst ./%, %, $(ASM_SOURCES))
+
+OBJECTS := $(addprefix $(OBJ_DIR)/, $(patsubst %.c, %.o, $(CLEAN_SRCS)))
+OBJECTS += $(addprefix $(OBJ_DIR)/, $(patsubst %.s, %.o, $(CLEAN_ASMS)))
 
 DEFINES = \
 -DUSE_STDPERIPH_DRIVER \
@@ -29,13 +37,8 @@ CFLAGS += -Wall -ffunction-sections -fdata-sections -std=gnu99
 LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
 LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -specs=nano.specs --specs=nosys.specs -u _printf_float -lc -lm -lnosys -lgcc
 
-CLEAN_SRCS := $(patsubst ./%, %, $(C_SOURCES))
-CLEAN_ASMS := $(patsubst ./%, %, $(ASM_SOURCES))
 
-OBJECTS := $(patsubst %.c, $(OBJ_DIR)/%.o, $(CLEAN_SRCS))
-OBJECTS += $(patsubst %.s, $(OBJ_DIR)/%.o, $(CLEAN_ASMS))
-
-# 编译链接规则
+# ==================== 编译链接规则 ====================
 all: $(TARGET).hex
 
 $(TARGET).hex: $(TARGET).elf
