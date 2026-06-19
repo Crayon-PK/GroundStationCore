@@ -16,13 +16,13 @@ void Page_Home_Create(void)
     lv_obj_set_style_bg_color(s_page_home, lv_color_white(), 0); 
     
     s_pose_ball = Widget_Pose_Init(s_page_home);
-    lv_obj_set_pos(s_pose_ball, 200, 200); 
+    lv_obj_set_pos(s_pose_ball, 500, 200); 
     
     lv_obj_update_layout(s_pose_ball); 
 
     s_label_telemetry = lv_label_create(s_page_home);
     lv_obj_align(s_label_telemetry, LV_ALIGN_TOP_LEFT, 20, 20);
-    lv_obj_set_style_text_color(s_label_telemetry, lv_color_black(), 0);
+    lv_obj_set_style_text_color(s_label_telemetry, lv_color_make(0xAA, 0x55, 0x00), 0);
     lv_label_set_text(s_label_telemetry, "MAVLink: Connecting...");
 
     lv_scr_load(s_page_home);

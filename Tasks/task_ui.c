@@ -4,14 +4,10 @@
 #include "lvgl.h"
 #include "page_home.h"
 
-SemaphoreHandle_t g_lvgl_mutex = NULL;
+extern SemaphoreHandle_t g_lvgl_mutex;
 
 void vTask_LVGL_System(void *parameters)
 {
-    g_lvgl_mutex = xSemaphoreCreateMutex();
-
-    Page_Home_Create();
-
     while(1)
     {
         if(xSemaphoreTake(g_lvgl_mutex, pdMS_TO_TICKS(20)) == pdTRUE)

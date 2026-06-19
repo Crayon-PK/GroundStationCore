@@ -216,7 +216,7 @@ int LCD_Init(void)
     LCD_Write_Data(0x03);  // 16位 RGB565 格式
     
     LCD_Write_Cmd(CMD_SET_ADDRESS_MODE);   // 发送 Set Address Mode 命令
-    LCD_Write_Data(0x40);
+    LCD_Write_Data(0x01);
 
     LCD_Switch_FastMode(0x0F); 
     
