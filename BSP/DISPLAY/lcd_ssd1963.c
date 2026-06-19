@@ -293,6 +293,8 @@ void LCD_SetWindow(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
     LCD_Write_Data(y1 & 0xFF); 
     LCD_Write_Data(y2 >> 8);
     LCD_Write_Data(y2 & 0xFF);
+
+    LCD_Write_Cmd(CMD_WRITE_MEMORY_START);
 }
 
 /**
@@ -307,9 +309,7 @@ void LCD_Color_Fill(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t
 {
     if (color_p == NULL) return;
     uint32_t total_pixels = (x2 - x1 + 1) * (y2 - y1 + 1);
-    
     LCD_SetWindow(x1, y1, x2, y2);
-    LCD_Write_Cmd(CMD_WRITE_MEMORY_START);
     for(uint32_t i = 0; i < total_pixels; i++)
     {
         LCD_Write_Data(color_p[i]);
@@ -329,7 +329,6 @@ void LCD_Fill_Solid(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t
     uint32_t total_pixels = (x2 - x1 + 1) * (y2 - y1 + 1);
     
     LCD_SetWindow(x1, y1, x2, y2);
-    LCD_Write_Cmd(CMD_WRITE_MEMORY_START);
     for(uint32_t i = 0; i < total_pixels; i++)
     {
         LCD_Write_Data(color);

@@ -30,5 +30,6 @@ int main(void)
 
     // 任务初始化
     Tasks_Manager_Init();
+    
     while (1);
 }

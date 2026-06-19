@@ -35,7 +35,18 @@ void Page_Home_Update(void)
                        g_flight_data.attitude.pitch,
                        g_flight_data.attitude.yaw);
 
-    lv_label_set_text_fmt(s_label_telemetry, "Packets: %lu\nHeartbeats: %lu",
-                          g_flight_data.stats.total_packets,
-                          g_flight_data.stats.heartbeat_count);
+    static uint32_t last_packets = 0xFFFFFFFF;
+    // 只有当收到新 MAVLink 包时，才去触发 LVGL 的局部文本刷新
+    if (g_flight_data.stats.total_packets != last_packets)
+    {
+        last_packets = g_flight_data.stats.total_packets;
+        
+        if(last_packets == 0) {
+            lv_label_set_text(s_label_telemetry, "MAVLink: Connecting...");
+        } else {
+            lv_label_set_text_fmt(s_label_telemetry, "Packets: %lu\nHeartbeats: %lu",
+                                  g_flight_data.stats.total_packets,
+                                  g_flight_data.stats.heartbeat_count);
+        }
+    }
 }
