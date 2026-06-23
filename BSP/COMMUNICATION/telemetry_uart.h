@@ -3,7 +3,7 @@
 
 #include "stm32f4xx.h"
 
-#define TELEMETRY_BUFF_SIZE         256
+#define TELEMETRY_BUFF_SIZE         1024
 
 #define TELEMETRY_UART              USART3
 #define TELEMETRY_UART_CLK_CMD      RCC_APB1PeriphClockCmd

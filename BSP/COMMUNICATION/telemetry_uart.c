@@ -131,13 +131,13 @@ int Telemetry_UART_Init(void)
     
     NVIC_Init(&(NVIC_InitTypeDef){
         .NVIC_IRQChannel                   = TELEMETRY_UART_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = 5,
+        .NVIC_IRQChannelPreemptionPriority = 6,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd                = ENABLE
     });
     NVIC_Init(&(NVIC_InitTypeDef){
         .NVIC_IRQChannel                   = TELEMETRY_TX_DMA_IRQn,
-        .NVIC_IRQChannelPreemptionPriority = 6,
+        .NVIC_IRQChannelPreemptionPriority = 7,
         .NVIC_IRQChannelSubPriority        = 0,
         .NVIC_IRQChannelCmd                = ENABLE
     });
@@ -154,6 +154,9 @@ int Telemetry_UART_Init(void)
 void Telemetry_UART_SendBuffer_DMA(uint8_t* arr, uint16_t len)
 {
     if (arr == NULL || len == 0) return;
+    DMA_Cmd(TELEMETRY_TX_DMA_STREAM, DISABLE);
+    while (DMA_GetCmdStatus(TELEMETRY_TX_DMA_STREAM) != DISABLE);
+    
     TELEMETRY_TX_DMA_STREAM->M0AR = (uint32_t)arr;
     DMA_SetCurrDataCounter(TELEMETRY_TX_DMA_STREAM, len);
     DMA_ClearFlag(TELEMETRY_TX_DMA_STREAM, TELEMETRY_TX_DMA_FLAG_TC);
