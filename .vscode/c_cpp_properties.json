@@ -4,7 +4,8 @@
             "name": "STM32F4",
             "includePath": [
                 "${workspaceFolder}/App/**",
-                "${workspaceFolder}/App/widgets/**",
+                "${workspaceFolder}/App/ui/**",
+                "${workspaceFolder}/App/ui/widgets/**",
                 "${workspaceFolder}/BSP/**",
                 "${workspaceFolder}/Tasks/**",
                 "${workspaceFolder}/Platform/STM32F4/**",

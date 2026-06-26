@@ -4,12 +4,10 @@
 #include "lvgl.h"
 #include <stdio.h>
 
-// ================================================================
 // 屏幕与颜色常量
-// ================================================================
 #define SCREEN_W   800
 #define SCREEN_H   480
-#define NAV_H       45    // Tab Bar 高度（像素），lv_tabview 会自动处理
+#define NAV_H       45
 
 #define CLR_BG     0x0D1117
 #define CLR_CARD   0x161B22
@@ -21,31 +19,22 @@
 #define CLR_ORANGE 0xFF8C00
 #define CLR_AMBER  0xFFC300
 
-// ================================================================
 // 卡片结构体（外壳 + 纵向 Flex 内容区）
-// ================================================================
 typedef struct {
     lv_obj_t *card;
     lv_obj_t *body;
 } ui_card_t;
 
-// ================================================================
 // 共享样式
-// ================================================================
 static lv_style_t s_sty_card;
 static lv_style_t s_sty_title;
 static lv_style_t s_sty_value;
 static lv_style_t s_sty_sub;       // 二级小数据（爬升率、电流等）
 
-// ================================================================
 // 页面根句柄
-// ================================================================
 static lv_obj_t *s_tabview     = NULL;  // 全局 tabview 根
 
-// ----------------------------------------------------------------
 // HOME Tab 动态标签句柄（供 Update 高频刷新）
-// ----------------------------------------------------------------
-
 // 行1：状态
 static lv_obj_t *s_val_mode    = NULL;
 static lv_obj_t *s_val_armed   = NULL;
@@ -71,9 +60,7 @@ static lv_obj_t *s_val_rpy     = NULL;
 static lv_obj_t *s_arc_throttle   = NULL;
 static lv_obj_t *s_val_throttle   = NULL;  // 数字百分比
 
-// ================================================================
 // 样式初始化
-// ================================================================
 static void style_init(void)
 {
     // 卡片背景
@@ -89,20 +76,18 @@ static void style_init(void)
     lv_style_set_text_color(&s_sty_title, lv_color_hex(CLR_MUTED));
     lv_style_set_text_font(&s_sty_title, &lv_font_montserrat_10);
 
-    // 主数值（白色，14px）
+    // 主数值
     lv_style_init(&s_sty_value);
     lv_style_set_text_color(&s_sty_value, lv_color_hex(CLR_TEXT));
     lv_style_set_text_font(&s_sty_value, &lv_font_montserrat_14);
 
-    // 二级小数据（灰色，10px）
+    // 二级小数据
     lv_style_init(&s_sty_sub);
     lv_style_set_text_color(&s_sty_sub, lv_color_hex(CLR_MUTED));
     lv_style_set_text_font(&s_sty_sub, &lv_font_montserrat_10);
 }
 
-// ================================================================
 // 工厂函数
-// ================================================================
 static ui_card_t make_card(lv_obj_t *parent, lv_coord_t w, lv_coord_t h)
 {
     ui_card_t c;
@@ -152,10 +137,7 @@ static lv_obj_t *make_sub(lv_obj_t *body, const char *text)
     return o;
 }
 
-// ================================================================
 // 各卡片业务创建
-// ================================================================
-
 /* 行1：MODE / STATUS / HEADING（3 × 31%，高 60px） */
 static void create_card_status(lv_obj_t *parent)
 {
@@ -197,7 +179,7 @@ static void create_card_sys(lv_obj_t *parent)
 
     s_bar_bat = lv_bar_create(c_bat.body);
     lv_obj_set_size(s_bar_bat, lv_pct(100), 8);
-    lv_obj_set_style_bg_color(s_bar_bat, lv_color_hex(0x2A3A2A), 0);              // 背景槽
+    lv_obj_set_style_bg_color(s_bar_bat, lv_color_hex(0x2A3A2A), LV_PART_MAIN);              // 背景槽
     lv_obj_set_style_bg_color(s_bar_bat, lv_color_hex(CLR_GREEN), LV_PART_INDICATOR);
     lv_bar_set_range(s_bar_bat, 0, 100);
     lv_bar_set_value(s_bar_bat, 0, LV_ANIM_OFF);
@@ -217,15 +199,33 @@ static void create_card_rpy(lv_obj_t *parent)
     s_val_rpy = make_value(c_rpy.body, "R: +0.0°      P: +0.0°      Y: 000.0°");
 }
 
-/* 右侧：油门 Arc 面板（占 right_panel 下部约 40%） */
-static void create_throttle_arc(lv_obj_t *parent)
+/* 右侧上区：姿态仪表盘卡片（flex_grow=3，占约 60%） */
+static void create_card_pose(lv_obj_t *parent)
 {
-    // 容器背景卡片
     lv_obj_t *card = lv_obj_create(parent);
     lv_obj_add_style(card, &s_sty_card, 0);
-    lv_obj_set_size(card, lv_pct(100), lv_pct(100));
+    lv_obj_set_flex_grow(card, 3);
+    lv_obj_set_width(card, lv_pct(100));
+    lv_obj_set_style_pad_all(card, 6, 0);
     lv_obj_set_scrollbar_mode(card, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_style_pad_all(card, 4, 0);
+
+    lv_obj_t *title = lv_label_create(card);
+    lv_obj_add_style(title, &s_sty_title, 0);
+    lv_label_set_text(title, "INSTRUMENT PANEL");
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, 0, 0);
+
+    Widget_Pose_Init(card); 
+}
+
+/* 右侧下区：油门 Arc 卡片（flex_grow=2，占约 40%） */
+static void create_throttle_arc(lv_obj_t *parent)
+{
+    lv_obj_t *card = lv_obj_create(parent);
+    lv_obj_add_style(card, &s_sty_card, 0);
+    lv_obj_set_flex_grow(card, 2);
+    lv_obj_set_width(card, lv_pct(100));
+    lv_obj_set_scrollbar_mode(card, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_style_pad_all(card, 6, 0);
 
     // 小标题
     lv_obj_t *title = lv_label_create(card);
@@ -239,8 +239,8 @@ static void create_throttle_arc(lv_obj_t *parent)
     lv_arc_set_bg_angles(s_arc_throttle, 0, 270);
     lv_arc_set_range(s_arc_throttle, 0, 100);
     lv_arc_set_value(s_arc_throttle, 0);
-    lv_obj_remove_style(s_arc_throttle, NULL, LV_PART_KNOB);   // 隐藏可拖动旋钮
-    lv_obj_clear_flag(s_arc_throttle, LV_OBJ_FLAG_CLICKABLE);  // 设为只读展示
+    lv_obj_remove_style(s_arc_throttle, NULL, LV_PART_KNOB);
+    lv_obj_clear_flag(s_arc_throttle, LV_OBJ_FLAG_CLICKABLE);
 
     // Arc 尺寸与位置
     lv_coord_t arc_size = 90;
@@ -262,9 +262,7 @@ static void create_throttle_arc(lv_obj_t *parent)
     lv_obj_align(s_val_throttle, LV_ALIGN_CENTER, 0, 4);
 }
 
-// ================================================================
-// Page_Home_Create
-// ================================================================
+// 主界面初始化函数
 void Page_Home_Create(void)
 {
     if (s_tabview != NULL) return;
@@ -315,7 +313,7 @@ void Page_Home_Create(void)
     lv_obj_set_flex_align(left_panel, LV_FLEX_ALIGN_SPACE_BETWEEN,
                           LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    // ── right_panel（COLUMN，上下两区）────────────────────────────
+    // ── right_panel（COLUMN，上下两区由各卡片的 flex_grow 自动分配比例）
     lv_obj_t *right_panel = lv_obj_create(tab_home);
     lv_obj_set_flex_grow(right_panel, 1);
     lv_obj_set_size(right_panel, LV_SIZE_CONTENT, lv_pct(100));
@@ -328,56 +326,30 @@ void Page_Home_Create(void)
     lv_obj_set_layout(right_panel, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(right_panel, LV_FLEX_FLOW_COLUMN);
 
-    // 右上：姿态球容器（flex_grow = 3，占约 60%）
-    lv_obj_t *pose_wrap = lv_obj_create(right_panel);
-    lv_obj_set_flex_grow(pose_wrap, 3);
-    lv_obj_set_width(pose_wrap, lv_pct(100));
-    lv_obj_set_style_bg_opa(pose_wrap, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(pose_wrap, 0, 0);
-    lv_obj_set_style_pad_all(pose_wrap, 0, 0);
-    lv_obj_set_scrollbar_mode(pose_wrap, LV_SCROLLBAR_MODE_OFF);
-
-    // 右下：油门 Arc 容器（flex_grow = 2，占约 40%）
-    lv_obj_t *throttle_wrap = lv_obj_create(right_panel);
-    lv_obj_set_flex_grow(throttle_wrap, 2);
-    lv_obj_set_width(throttle_wrap, lv_pct(100));
-    lv_obj_set_style_bg_opa(throttle_wrap, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(throttle_wrap, 0, 0);
-    lv_obj_set_style_pad_all(throttle_wrap, 0, 0);
-    lv_obj_set_scrollbar_mode(throttle_wrap, LV_SCROLLBAR_MODE_OFF);
-
     // ── Tab 1：RC CHANNELS（预留，后续填充）───────────────────────
     lv_obj_t *tab_rc = lv_tabview_add_tab(s_tabview, "RC CH");
     lv_obj_set_style_bg_color(tab_rc, lv_color_hex(CLR_BG), 0);
     lv_obj_set_style_pad_all(tab_rc, 8, 0);
     lv_obj_set_scrollbar_mode(tab_rc, LV_SCROLLBAR_MODE_OFF);
 
-    // 占位提示（等你写 RC 通道页面时删掉）
-    lv_obj_t *hint = lv_label_create(tab_rc);
-    lv_obj_add_style(hint, &s_sty_title, 0);
-    lv_label_set_text(hint, "RC Channel page — coming soon");
-    lv_obj_center(hint);
+    // RC 页预留空白，后续填充内容时在此处添加控件
+    (void)tab_rc;   // 消除未使用警告
+
+    // 禁用 tabview 左右滑动手势，改为纯按键切换
+    lv_obj_clear_flag(lv_tabview_get_content(s_tabview), LV_OBJ_FLAG_SCROLLABLE);
 
     // ── 注入各数据卡片 ─────────────────────────────────────────────
     create_card_status(left_panel);
     create_card_move(left_panel);
     create_card_sys(left_panel);
     create_card_rpy(left_panel);
-
-    // 姿态球挂载到 pose_wrap
-    Widget_Pose_Init(pose_wrap);
-
-    // 油门 Arc 挂载到 throttle_wrap
-    create_throttle_arc(throttle_wrap);
+    create_card_pose(right_panel);
+    create_throttle_arc(right_panel);
 }
 
-// ================================================================
-// Page_Home_Update（由 vTask_Data_Refresh 每 50ms 调用）
-// ================================================================
 void Page_Home_Update(void)
 {
-    char buf[32];
-
+    char buf[64];
     // ── 行1：MODE / STATUS / HEADING ──────────────────────────────
     {
         LinkStatus_t st;
@@ -391,7 +363,8 @@ void Page_Home_Update(void)
     {
         LinkVfrHud_t hud;
         DataPool_GetVfrHud(&hud);
-
+        
+        // 航向角为整数，直接输出
         snprintf(buf, sizeof(buf), "%03u°", hud.heading);
         lv_label_set_text(s_val_heading, buf);
 
@@ -420,9 +393,10 @@ void Page_Home_Update(void)
         if (thr < 0)   thr = 0;
         if (thr > 100) thr = 100;
         lv_arc_set_value(s_arc_throttle, thr);
+        
         snprintf(buf, sizeof(buf), "%d%%", (int)thr);
         lv_label_set_text(s_val_throttle, buf);
-        // 油门超 80% 变红警告
+        
         lv_obj_set_style_arc_color(s_arc_throttle,
             thr > 80 ? lv_color_hex(CLR_RED) : lv_color_hex(CLR_ORANGE),
             LV_PART_INDICATOR);
@@ -435,24 +409,20 @@ void Page_Home_Update(void)
         LinkBattery_t bat;
         DataPool_GetBattery(&bat);
 
-        // 电压（毫伏转伏）
         snprintf(buf, sizeof(buf), "%.1f V", bat.voltage_mv / 1000.0f);
         lv_label_set_text(s_val_volt, buf);
 
-        // 电流（百毫安转安）+ 剩余百分比
         float curr_a = (bat.current_ca >= 0) ? bat.current_ca / 10.0f : 0.0f;
         int   pct    = (bat.remaining_pct >= 0) ? (int)bat.remaining_pct : 0;
         snprintf(buf, sizeof(buf), "%.1f A  \xB7  %d%%", curr_a, pct);
         lv_label_set_text(s_val_curr, buf);
 
-        // 进度条颜色：低于 20% 变红，低于 40% 变橙
         lv_color_t bar_clr = lv_color_hex(CLR_GREEN);
         if (pct <= 20)      bar_clr = lv_color_hex(CLR_RED);
         else if (pct <= 40) bar_clr = lv_color_hex(CLR_AMBER);
         lv_obj_set_style_bg_color(s_bar_bat, bar_clr, LV_PART_INDICATOR);
         lv_bar_set_value(s_bar_bat, pct, LV_ANIM_OFF);
 
-        // 电压颜色：低于警告阈值变橙/红
         uint8_t warn = DataPool_GetBatteryWarnLevel();
         lv_obj_set_style_text_color(s_val_volt,
             warn == 2 ? lv_color_hex(CLR_RED)    :
@@ -465,7 +435,6 @@ void Page_Home_Update(void)
         LinkGps_t gps;
         DataPool_GetGps(&gps);
 
-        // fix 类型字符串 + 颜色
         const char *fix_str;
         lv_color_t  fix_clr;
         switch (gps.fix_type) {
@@ -483,12 +452,14 @@ void Page_Home_Update(void)
         lv_label_set_text(s_val_gps_sub, buf);
     }
 
-    // ── 行4：ROLL / PITCH / YAW ───────────────────────────────────
+    // ── 行4：ROLL / PITCH / YAW（欧拉角） ────────────────────────────
     {
         LinkAttitude_t att;
         DataPool_GetAttitude(&att);
-
-        snprintf(buf, sizeof(buf), "R: %+.1f°      P: %+.1f°      Y: %05.1f°",
+        
+        Widget_Pose_Update(att.roll, att.pitch, att.yaw);
+        
+        snprintf(buf, sizeof(buf), "R: %+.1f°    P: %+.1f°    Y: %+.1f°",
                  att.roll, att.pitch, att.yaw);
         lv_label_set_text(s_val_rpy, buf);
     }

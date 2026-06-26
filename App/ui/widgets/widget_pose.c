@@ -246,6 +246,7 @@ lv_obj_t* Widget_Pose_Init(lv_obj_t* parent)
     // 外环：承载罗盘/T型指针/偏航箭头
     s_roll_container = lv_obj_create(parent);
     lv_obj_set_size(s_roll_container, WIDGET_POSE_SIZE, WIDGET_POSE_SIZE);
+    lv_obj_align(s_roll_container, LV_ALIGN_CENTER, 0, 6);
     lv_obj_set_style_radius(s_roll_container, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(s_roll_container, COLOR_OUTER_BG, 0);
     lv_obj_set_style_border_width(s_roll_container, 0, 0);

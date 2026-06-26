@@ -37,7 +37,6 @@ CFLAGS += -Wall -ffunction-sections -fdata-sections -std=gnu99
 LDSCRIPT = ./Platform/STM32F4/stm32f407vg_flash.ld
 LDFLAGS = -T $(LDSCRIPT) -Wl,--gc-sections -specs=nano.specs --specs=nosys.specs -u _printf_float -lc -lm -lnosys -lgcc
 
-
 # ==================== 编译链接规则 ====================
 all: $(TARGET).hex
 

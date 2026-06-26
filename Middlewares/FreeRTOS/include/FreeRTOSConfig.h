@@ -8,7 +8,7 @@
 #define configTICK_RATE_HZ                      1000        // 1ms 一次系统心跳
 #define configMAX_PRIORITIES                    32          // 最大优先级数量
 #define configMINIMAL_STACK_SIZE                ((unsigned short)130)
-#define configTOTAL_HEAP_SIZE                   ((size_t)(30 * 1024)) // 50KB 堆空间
+#define configTOTAL_HEAP_SIZE                   ((size_t)(30 * 1024)) // 30KB 堆空间
 #define configUSE_MUTEXES                       1           // 1:启用互斥锁         
 
 #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS

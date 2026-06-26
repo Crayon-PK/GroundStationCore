@@ -16,15 +16,28 @@ static SemaphoreHandle_t s_mutex = NULL;
 #define LOCK_R()  (s_mutex && xSemaphoreTake(s_mutex, pdMS_TO_TICKS(10)) == pdTRUE)
 #define UNLOCK()  xSemaphoreGive(s_mutex)
 
-// 飞行模式字符串表
-static const char* const s_mode_table[] = {
-    "Stabilize", "Acro",    "AltHold", "Auto",     "Guided",
-    "Loiter",    "RTL",     "Circle",  "Land",     "Drift",
-    "Sport",     "Flip",    "AutoTune","PosHold",  "Brake",
-    "Throw",     "Avoid",   "GuidedNG","SmartRTL", "FlowHold",
-    "Follow",    "ZigZag",  "SystemID","Autorot",  "AutoRTL"
-};
-#define MODE_TABLE_SIZE ((uint32_t)(sizeof(s_mode_table) / sizeof(s_mode_table[0])))
+// PX4 custom_mode 解析
+// 32位布局：[31:24]=reserved [23:16]=main_mode [15:8]=sub_mode [7:0]=reserved
+// 只取 main_mode（第3字节）作为主模式索引
+//
+// PX4 main_mode 枚举（px4_custom_mode.h）
+#define PX4_CUSTOM_MAIN_MODE_MANUAL      1
+#define PX4_CUSTOM_MAIN_MODE_ALTCTL      2
+#define PX4_CUSTOM_MAIN_MODE_POSCTL      3
+#define PX4_CUSTOM_MAIN_MODE_AUTO        4
+#define PX4_CUSTOM_MAIN_MODE_ACRO        5
+#define PX4_CUSTOM_MAIN_MODE_OFFBOARD    6
+#define PX4_CUSTOM_MAIN_MODE_STABILIZED  7
+#define PX4_CUSTOM_MAIN_MODE_RATTITUDE   8
+
+// PX4 AUTO sub_mode 枚举
+#define PX4_CUSTOM_SUB_MODE_AUTO_READY       1
+#define PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF     2
+#define PX4_CUSTOM_SUB_MODE_AUTO_LOITER      3
+#define PX4_CUSTOM_SUB_MODE_AUTO_MISSION     4
+#define PX4_CUSTOM_SUB_MODE_AUTO_RTL         5
+#define PX4_CUSTOM_SUB_MODE_AUTO_LAND        6
+#define PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW      8
 
 void DataPool_Init(void)
 {
@@ -150,16 +163,54 @@ void DataPool_ParseAndSetStatus(uint8_t base_mode, uint32_t custom_mode)
 {
     LinkStatus_t st;
     memset(&st, 0, sizeof(st));
- 
+
     // MAV_MODE_FLAG_SAFETY_ARMED = 0x80
     st.is_armed = (base_mode & 0x80u) ? 1u : 0u;
- 
-    if (custom_mode < MODE_TABLE_SIZE) {
-        strncpy(st.mode_str, s_mode_table[custom_mode], sizeof(st.mode_str) - 1);
-    } else {
-        // 未知模式，显示原始数字
-        snprintf(st.mode_str, sizeof(st.mode_str), "Mode%lu", custom_mode);
+
+    // PX4 custom_mode 布局：高16位保留，第3字节为 main_mode，第2字节为 sub_mode
+    uint8_t main_mode = (uint8_t)((custom_mode >> 16) & 0xFF);
+    uint8_t sub_mode  = (uint8_t)((custom_mode >>  8) & 0xFF);
+
+    switch (main_mode) {
+        case PX4_CUSTOM_MAIN_MODE_MANUAL:
+            strncpy(st.mode_str, "Manual", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_ALTCTL:
+            strncpy(st.mode_str, "AltCtl", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_POSCTL:
+            strncpy(st.mode_str, "PosCtl", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_AUTO:
+            // AUTO 模式下细分子模式
+            switch (sub_mode) {
+                case PX4_CUSTOM_SUB_MODE_AUTO_READY:    strncpy(st.mode_str, "Ready",    sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:  strncpy(st.mode_str, "Takeoff",  sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_LOITER:   strncpy(st.mode_str, "Loiter",   sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_MISSION:  strncpy(st.mode_str, "Mission",  sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_RTL:      strncpy(st.mode_str, "RTL",      sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_LAND:     strncpy(st.mode_str, "Land",     sizeof(st.mode_str) - 1); break;
+                case PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW:   strncpy(st.mode_str, "Follow",   sizeof(st.mode_str) - 1); break;
+                default:                                strncpy(st.mode_str, "Auto",     sizeof(st.mode_str) - 1); break;
+            }
+            break;
+        case PX4_CUSTOM_MAIN_MODE_ACRO:
+            strncpy(st.mode_str, "Acro", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_OFFBOARD:
+            strncpy(st.mode_str, "Offboard", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_STABILIZED:
+            strncpy(st.mode_str, "Stabilized", sizeof(st.mode_str) - 1);
+            break;
+        case PX4_CUSTOM_MAIN_MODE_RATTITUDE:
+            strncpy(st.mode_str, "Rattitude", sizeof(st.mode_str) - 1);
+            break;
+        default:
+            // 未知模式：显示 main/sub 原始值，便于调试
+            snprintf(st.mode_str, sizeof(st.mode_str), "M%u/S%u", main_mode, sub_mode);
+            break;
     }
- 
+
     DataPool_SetStatus(&st);
 }
