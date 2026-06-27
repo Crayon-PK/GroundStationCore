@@ -195,8 +195,8 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
     /*Save the pressed coordinates and the state*/
     if(points_cnt > 0) {
         // 在此处统一进行坐标方向映射，锁存到静态变量中
-        last_x = 800 - touch_point.x;
-        last_y = touch_point.y;
+        last_x = 799 - touch_point.x;
+        last_y = 479 - touch_point.y;
         data->state = LV_INDEV_STATE_PR;
     }
     else {

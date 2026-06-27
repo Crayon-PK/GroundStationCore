@@ -182,7 +182,6 @@ void DataPool_ParseAndSetStatus(uint8_t base_mode, uint32_t custom_mode)
             strncpy(st.mode_str, "PosCtl", sizeof(st.mode_str) - 1);
             break;
         case PX4_CUSTOM_MAIN_MODE_AUTO:
-            // AUTO 模式下细分子模式
             switch (sub_mode) {
                 case PX4_CUSTOM_SUB_MODE_AUTO_READY:    strncpy(st.mode_str, "Ready",    sizeof(st.mode_str) - 1); break;
                 case PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF:  strncpy(st.mode_str, "Takeoff",  sizeof(st.mode_str) - 1); break;
@@ -207,7 +206,6 @@ void DataPool_ParseAndSetStatus(uint8_t base_mode, uint32_t custom_mode)
             strncpy(st.mode_str, "Rattitude", sizeof(st.mode_str) - 1);
             break;
         default:
-            // 未知模式：显示 main/sub 原始值，便于调试
             snprintf(st.mode_str, sizeof(st.mode_str), "M%u/S%u", main_mode, sub_mode);
             break;
     }

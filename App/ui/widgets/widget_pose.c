@@ -253,6 +253,7 @@ lv_obj_t* Widget_Pose_Init(lv_obj_t* parent)
     lv_obj_set_style_pad_all(s_roll_container, 0, 0);
     lv_obj_set_scrollbar_mode(s_roll_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_add_event_cb(s_roll_container, draw_roll_yaw_overlay_cb, LV_EVENT_DRAW_POST, NULL);
+    lv_obj_clear_flag(s_roll_container,    LV_OBJ_FLAG_SCROLLABLE);
 
     // 内环：clip_corner 将子对象天地背景裁切为圆形；承载静止参考线
     s_attitude_container = lv_obj_create(s_roll_container);
@@ -265,7 +266,8 @@ lv_obj_t* Widget_Pose_Init(lv_obj_t* parent)
     lv_obj_set_style_pad_all(s_attitude_container, 0, 0);
     lv_obj_set_scrollbar_mode(s_attitude_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_add_event_cb(s_attitude_container, draw_static_pitch_ref_cb, LV_EVENT_DRAW_POST, NULL);
-
+    lv_obj_clear_flag(s_attitude_container, LV_OBJ_FLAG_SCROLLABLE);
+    
     // 透明罩：与内环等大，背景透明，用于隔离绘制顺序
     // DRAW_MAIN 先于内环的 DRAW_POST，确保天地背景在参考线之下
     s_attitude_bg = lv_obj_create(s_attitude_container);
@@ -276,6 +278,7 @@ lv_obj_t* Widget_Pose_Init(lv_obj_t* parent)
     lv_obj_set_style_pad_all(s_attitude_bg, 0, 0);
     lv_obj_set_scrollbar_mode(s_attitude_bg, LV_SCROLLBAR_MODE_OFF);
     lv_obj_add_event_cb(s_attitude_bg, draw_horizon_line_cb, LV_EVENT_DRAW_MAIN, NULL);
+    lv_obj_clear_flag(s_attitude_bg,        LV_OBJ_FLAG_SCROLLABLE);
 
     return s_roll_container;
 }
