@@ -32,8 +32,10 @@ static lv_obj_t *s_bar_bat     = NULL;
 static lv_obj_t *s_val_gps_fix = NULL;  
 static lv_obj_t *s_val_gps_sub = NULL;  
 static lv_obj_t *s_val_rpy     = NULL;
+static lv_obj_t *s_val_pos_3d  = NULL;
 static lv_obj_t *s_arc_throttle   = NULL;
 static lv_obj_t *s_val_throttle   = NULL;  
+
 
 static void style_init(void)
 {
@@ -157,6 +159,13 @@ static void create_card_rpy(lv_obj_t *parent)
     s_val_rpy = make_value(c_rpy.body, "R: +0.0°      P: +0.0°      Y: 000.0°");
 }
 
+static void create_card_pos_3d(lv_obj_t *parent)
+{
+    ui_card_t c_pos = make_card(parent, lv_pct(100), 55);
+    make_title(c_pos.body, "GPS POSITION (LAT / LON / ALT)");
+    s_val_pos_3d = make_value(c_pos.body, "LA: +00.0000000°      LO: +000.0000000°      ALT: --.- m");
+}
+
 static void create_card_pose(lv_obj_t *parent)
 {
     lv_obj_t *card = lv_obj_create(parent);
@@ -264,6 +273,7 @@ void Page_Home_Create(void)
     create_card_move(left_panel);
     create_card_sys(left_panel);
     create_card_rpy(left_panel);
+    create_card_pos_3d(left_panel);
     create_card_pose(right_panel);
     create_throttle_arc(right_panel);
 }
@@ -359,6 +369,13 @@ void Page_Home_Update(void)
 
         snprintf(buf, sizeof(buf), "%u sats  \xB7  HDOP %.1f", gps.satellites_visible, gps.hdop);
         lv_label_set_text(s_val_gps_sub, buf);
+
+        double lat_deg = gps.lat / 10000000.0;
+        double lon_deg = gps.lon / 10000000.0;
+        
+        snprintf(buf, sizeof(buf), "LA: %+.7f°    LO: %+.7f°    ALT: %.1f m",
+                 lat_deg, lon_deg, gps.alt_rel);
+        lv_label_set_text(s_val_pos_3d, buf);
     }
 
     // ── 行4：姿态 ────────────────────────────────────────────
@@ -375,13 +392,36 @@ void Page_Home_Update(void)
 void Page_Home_Destroy(void)
 {
     if (s_page_root == NULL) return;
+    
+    // 销毁页面根容器，释放其下所有子控件内存
     lv_obj_del(s_page_root);
     s_page_root = NULL;
 
-    s_val_mode = s_val_armed = s_val_heading = NULL;
-    s_val_alt  = s_val_climb = s_val_gspd   = s_val_aspd = NULL;
-    s_val_volt = s_val_curr  = s_bar_bat    = NULL;
-    s_val_gps_fix = s_val_gps_sub = NULL;
-    s_val_rpy      = NULL;
-    s_arc_throttle = s_val_throttle = NULL;
+    // ── 行1：状态组件句柄清理 ──
+    s_val_mode    = NULL;
+    s_val_armed   = NULL;
+    s_val_heading = NULL;
+
+    // ── 行2：高度与速度组件句柄清理 ──
+    s_val_alt     = NULL;
+    s_val_climb   = NULL;
+    s_val_gspd    = NULL;
+    s_val_aspd    = NULL;
+
+    // ── 行3：电池与状态栏GPS句柄清理 ──
+    s_val_volt    = NULL;
+    s_val_curr    = NULL;
+    s_bar_bat     = NULL;
+    s_val_gps_fix = NULL;
+    s_val_gps_sub = NULL;
+
+    // ── 行4：RPY欧拉角组件句柄清理 ──
+    s_val_rpy     = NULL;
+
+    // ── 右侧：油门仪表面板句柄清理 ──
+    s_arc_throttle = NULL;
+    s_val_throttle = NULL;
+
+    // ── 三维高程坐标句柄清理 ──
+    s_val_pos_3d   = NULL;
 }
